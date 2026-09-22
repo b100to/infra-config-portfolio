@@ -1,0 +1,40 @@
+provider "aws" {
+  region = local.region
+}
+
+module "rabbitmq" {
+  source = "../../modules/ecs/rabbitmq"
+
+  cluster = data.aws_ecs_cluster.this.cluster_name
+
+  vpc_id          = local.vpc_id
+  public_subnets  = local.public_subnets
+  private_subnets = local.private_subnets
+
+  image_name          = local.beacon_image_name
+  image_url           = "${local.beacon_image_url}:${local.beacon_image_tag}"
+  fluentbit_image_url = var.fluentbit_image_url[local.env]
+
+  container_name = local.beacon_container_name
+  container_port = local.beacon_container_port
+
+  cpu    = local.spec.cpu[local.env]
+  memory = local.spec.memory[local.env]
+
+  task_role_arn      = data.aws_iam_role.task.arn
+  execution_role_arn = data.aws_iam_role.TaskExecution.arn
+
+  zone_name = data.aws_route53_zone.this.name
+  zone_id   = data.aws_route53_zone.this.zone_id
+
+  dd_env = local.env
+
+  dd_project = local.dd_project
+  dd_service = local.dd_service
+  dd_source  = local.dd_source
+
+  internal_route53_name = data.aws_route53_zone.this.name
+  taget_group_rabbit    = data.aws_lb_target_group.rabbit.id
+
+  tags = local.tags
+}
